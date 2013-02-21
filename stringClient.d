@@ -1,1 +1,0 @@
-stringClient.o: stringClient.cc
