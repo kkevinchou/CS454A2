@@ -1,0 +1,1 @@
+stringServer.o: stringServer.cc
