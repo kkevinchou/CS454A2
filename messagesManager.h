@@ -10,14 +10,6 @@ using namespace std;
 
 class MessagesManager
 {
-	private:
-		 
-		 
-		 
-
-		//static void * sendMessages(void * p);
-		 ~MessagesManager();
-
 	public:
 		 MessagesManager(int socketFileDescriptor);
 		 void addMessage(string m);
@@ -25,8 +17,7 @@ class MessagesManager
 		 int _sfd;
 		 pthread_mutex_t * _listLock;
 		 pthread_t _thread;
-
-//
+		 ~MessagesManager();
 };
 
 

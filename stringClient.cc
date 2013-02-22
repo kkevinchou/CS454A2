@@ -87,6 +87,7 @@ void *sendInputToSocket(void *fdp)
         messageCounter++;
     }
 
+    inputDone = true;
     return NULL;
 }
 
@@ -145,6 +146,11 @@ void *receiveFromSocketAndSendToOutput(void *fdp)
 
         cout << "Server: " << m->getString()<<endl;
         delete m;
+
+        messageCounter --;
+        if(inputDone && messageCounter == 0) break;
+
+
     }
 
     return NULL;
@@ -161,47 +167,13 @@ int main(int argc, char *argv[])
 
     int socketFileDescriptor = setupSocketAndReturnDescriptor(serverAddressString, serverPortString);
 
-   /* char buffer[256];
-    int n;
+    instance = new MessagesManager(socketFileDescriptor);
 
-    //list<Message* > msges;
+     pthread_t sendingThread ;
 
-    while(true)
-    {
-        //Message * m = new Message(msg);
-        //msges.push_front(m);
-
-        cout << "Please enter the message: ";
-        memset(buffer,0,256);
-        fgets(buffer,255,stdin);
-
-        if(buffer == NULL) break;
-
-        n = send(socketFileDescriptor,buffer,strlen(buffer), 0);
-        cout << "Sent"<<endl;
-        if (n < 0)
-             error("ERROR writing to socket");
-        memset(buffer,0,256);
-        n = recv(socketFileDescriptor,buffer,255, 0);
-        if (n < 0)
-             error("ERROR reading from socket");
-        cout << buffer << endl;
-    }*/
-
-    // eof, but wait for server to respond
-
-    //close(socketFileDescriptor);
-
-        instance = new MessagesManager(socketFileDescriptor);
-
-        pthread_t sendingThread ;
-       // pthread_t receivingThread;
-
-   // pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
-        //cout << "q"<<endl;
     pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
 
-     //pthread_join(sendingThread, NULL); //
-       // sendInputToSocket(&socketFileDescriptor);
-        receiveFromSocketAndSendToOutput(&socketFileDescriptor);
+    receiveFromSocketAndSendToOutput(&socketFileDescriptor);
+
+    delete instance;
 }
