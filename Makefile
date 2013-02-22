@@ -5,7 +5,7 @@ MAKEFILE_NAME = ${firstword ${MAKEFILE_LIST}}	# makefile name
 OBJECTS1 = stringServer.o
 EXEC1 = stringServer				# 1st executable name
 
-OBJECTS2 = stringClient.o
+OBJECTS2 = stringClient.o message.o
 EXEC2 = stringClient				# 2st executable name
 
 
