@@ -9,7 +9,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> //getenv
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
@@ -18,64 +18,91 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include <cstring>
 
 using namespace std;
-void error(const char *msg)
+void error(string msg)
 {
-    perror(msg);
-    exit(0);
+    cerr << msg << endl;
+    exit(-1);
 }
 
-int main(int argc, char *argv[])
+
+int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPortString)
 {
-    int sockfd, portno, n;
-    struct sockaddr_in serv_addr;
+    int socketFileDescriptor;
+    int serverPort;
+
+    struct sockaddr_in serverAddressStruct;
     struct hostent *server;
 
-    char buffer[256];
-    if (argc < 3) {
-       cerr << "usage "<< argv[0]<<"  hostname port\n"<<endl;
-       exit(0);
-    }
-    portno = atoi(argv[2]);
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
-        error("ERROR opening socket");
-    server = gethostbyname(argv[1]);
+ 
+
+    serverPort = atoi(serverPortString);
+    socketFileDescriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketFileDescriptor < 0)
+        error("ERROR while opening socket");
+
+    server = gethostbyname(serverAddressString);
+
     if (server == NULL) {
-        cerr<<"ERROR, no such host"<<endl;
-        exit(0);
+        error("ERROR: No such host");
+
     }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
+
+
+    memset((char *) &serverAddressStruct, 0,sizeof(serverAddressStruct));
+
+    serverAddressStruct.sin_family = AF_INET;
     bcopy((char *)server->h_addr,
-         (char *)&serv_addr.sin_addr.s_addr,
+         (char *)&serverAddressStruct.sin_addr.s_addr,
          server->h_length);
-    serv_addr.sin_port = htons(portno);
-    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-        error("ERROR connecting");
-    cerr << "Please enter the message: ";
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0)
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0)
-         error("ERROR reading from socket");
-    cout << buffer << endl;
-    close(sockfd);
+    serverAddressStruct.sin_port = htons(serverPort);
 
-	string msg;
+    cout << "HOST: "<<serverAddressString << " PORT: " << serverPort<<endl;
 
-	list<Message* > msges;
+    if (connect(socketFileDescriptor,(struct sockaddr *) &serverAddressStruct,sizeof(serverAddressStruct)) < 0)
+        error("ERROR while connecting");
 
-	while(cin>>msg)
+    return socketFileDescriptor;
+}
+int main(int argc, char *argv[])
+{
+    char * serverAddressString = getenv ("SERVER_ADDRESS");
+    char * serverPortString = getenv("SERVER_PORT");
+
+    if(serverAddressString == NULL) error("ERROR: SERVER_ADDRESS environment variable not set.");
+    if(serverPortString == NULL) error("ERROR: SERVER_PORT environment variable not set.");
+
+    int socketFileDescriptor = setupSocketAndReturnDescriptor(serverAddressString, serverPortString);
+
+    char buffer[256];
+    int n;
+
+	//list<Message* > msges;
+
+	while(true)
 	{
-		Message * m = new Message(msg);
-		msges.push_front(m);
+		//Message * m = new Message(msg);
+		//msges.push_front(m);
+
+        cout << "Please enter the message: ";
+        memset(buffer,0,256);
+        fgets(buffer,255,stdin);
+
+        if(buffer == NULL) break;
+
+        n = write(socketFileDescriptor,buffer,strlen(buffer));
+        if (n < 0)
+             error("ERROR writing to socket");
+        memset(buffer,0,256);
+        n = read(socketFileDescriptor,buffer,255);
+        if (n < 0)
+             error("ERROR reading from socket");
+        cout << buffer << endl;
 	}
 
 	// eof, but wait for server to respond
+
+    close(socketFileDescriptor);
 }
