@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "message.h"
+#include "messagesManager.h"
 #include <list>
 
 
@@ -23,6 +23,9 @@
 #include <pthread.h>
 
 using namespace std;
+
+extern MessagesManager * instance;
+
 void error(string msg)
 {
     cerr << msg << endl;
@@ -72,27 +75,33 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
 
 void *sendInputToSocket(void *fdp)
 {
+  //  cout << "a"<<endl;
     int socketFileDescriptor = *(int *)(fdp);
     char buffer[256];
     int n;
 
     //list<Message* > msges;
-
+ //   cout << "reading input"<<endl;
     while(true)
     {
         //Message * m = new Message(msg);
         //msges.push_front(m);
 
        // cout << "Please enter the message: ";
+       // cout << "read..."<<endl;
         memset(buffer,0,256);
         fgets(buffer,255,stdin);
 
         if(buffer == NULL) break;
-
-        n = send(socketFileDescriptor,buffer,strlen(buffer), 0);
+//cout << "#"<<endl;
+        string s(buffer);
+       // cout << "add"<<endl;
+        instance->addMessage(s);
+        //cout << "finish add"<<endl;
+       // n = send(socketFileDescriptor,buffer,strlen(buffer), 0);
       //  cout << "Sent"<<endl;
-        if (n < 0)
-             error("ERROR writing to socket");
+       // if (n < 0)
+            // error("ERROR writing to socket");
 
     }
 
@@ -158,8 +167,15 @@ int main(int argc, char *argv[])
 
     //close(socketFileDescriptor);
 
-        pthread_t sendingThread, receivingThread;
+        instance = new MessagesManager(socketFileDescriptor);
 
-    pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
-    pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
+        pthread_t sendingThread ;
+        pthread_t receivingThread;
+
+   // pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
+        //cout << "q"<<endl;
+   // pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
+
+     //pthread_join(sendingThread, NULL); //
+        sendInputToSocket(&socketFileDescriptor);
 }

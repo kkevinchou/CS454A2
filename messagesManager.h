@@ -6,16 +6,29 @@
 #include "message.h"
 
 using namespace std;
+
+
 class MessagesManager
 {
 	private:
-		pthread_mutex_t _listLock;
-		int _sfd;
-		list<Message *> _m;
+		 
+		 
+		 
+
+		//static void * sendMessages(void * p);
+		 ~MessagesManager();
 
 	public:
-		MessagesManager(int socketFileDescriptor);
-		void addMessage(string m);
+		 MessagesManager(int socketFileDescriptor);
+		 void addMessage(string m);
+		 list<Message *> _m;
+		 int _sfd;
+		 pthread_mutex_t * _listLock;
+		 pthread_t _thread;
+
+//
 };
+
+
 
 #endif
