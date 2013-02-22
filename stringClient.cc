@@ -12,11 +12,11 @@ int main()
 {
 	string msg;
 
-	list<Message> msges;
+	list<Message* > msges;
 
 	while(cin>>msg)
 	{
-		Message m = new Message(msg);
+		Message * m = new Message(msg);
 		msges.push_front(m);
 	}
 
