@@ -26,6 +26,9 @@ using namespace std;
 
 extern MessagesManager * instance;
 
+volatile int messageCounter = 0;
+volatile bool inputDone = false;
+
 void error(string msg)
 {
     cerr << msg << endl;
@@ -75,34 +78,13 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
 
 void *sendInputToSocket(void *fdp)
 {
-  //  cout << "a"<<endl;
-    int socketFileDescriptor = *(int *)(fdp);
-    char buffer[256];
-    int n;
 
-    //list<Message* > msges;
- //   cout << "reading input"<<endl;
-    while(true)
+    string line;
+
+    while(cin >> line)
     {
-        //Message * m = new Message(msg);
-        //msges.push_front(m);
-
-       // cout << "Please enter the message: ";
-       // cout << "read..."<<endl;
-        memset(buffer,0,256);
-        fgets(buffer,255,stdin);
-
-        if(buffer == NULL) break;
-//cout << "#"<<endl;
-        string s(buffer);
-       // cout << "add"<<endl;
-        instance->addMessage(s);
-        //cout << "finish add"<<endl;
-       // n = send(socketFileDescriptor,buffer,strlen(buffer), 0);
-      //  cout << "Sent"<<endl;
-       // if (n < 0)
-            // error("ERROR writing to socket");
-
+        instance->addMessage(line);
+        messageCounter++;
     }
 
     return NULL;
@@ -111,23 +93,58 @@ void *sendInputToSocket(void *fdp)
 void *receiveFromSocketAndSendToOutput(void *fdp)
 {
     int socketFileDescriptor = *(int *)(fdp);
-    char buffer[256];
+    
     int n;
 
     while(true)
     {
-      //  cout << "getting ready to receive"<<endl;
-        memset(buffer,0,256);
-        n = recv(socketFileDescriptor,buffer,255, 0);
-       // cout << "got something"<<endl;
-        if(n == 0)
+        unsigned char sizeBuffer[4];
+        unsigned int sizeSize = 4;
+        unsigned char * sizeBufferP = sizeBuffer;
+        while(true)
         {
-            //connection closed!
-            break;
+            memset(sizeBuffer,0,4);
+            n = recv(socketFileDescriptor,sizeBufferP,sizeSize, 0);
+            if(n==0)
+            {
+                return NULL; //connection closed!
+            }
+            else if (n < 0)
+                 error("ERROR reading from socket");
+
+             sizeBufferP += n;
+             sizeSize -= n;
+
+             if(sizeSize == 0) break;
+            //receive 4 bytes first
         }
-        else if (n < 0)
-             error("ERROR reading from socket");
-        cout << "Server: "<<buffer << endl;
+
+        unsigned int messageSize = (sizeBuffer[0] << 24) + (sizeBuffer[1] << 16) + (sizeBuffer[2] << 8) + sizeBuffer[3];
+        Message * m = new Message(messageSize-1); // size ignores null char
+        char buffer[messageSize];
+        while(true)
+        {
+          // receive the message
+            memset(buffer,0,messageSize);
+            n = recv(socketFileDescriptor,buffer,messageSize, 0);
+           // cout << "got something"<<endl;
+            if(n == 0)
+            {
+                return NULL; //connection closed!
+            }
+            else if (n < 0)
+                 error("ERROR reading from socket");
+
+             string line(buffer);
+             m->addToString(line);
+
+             messageSize -= n;
+             if(messageSize <= 0) break;
+
+        }
+
+        cout << "Server: " << m->getString()<<endl;
+        delete m;
     }
 
     return NULL;
@@ -178,7 +195,7 @@ int main(int argc, char *argv[])
         instance = new MessagesManager(socketFileDescriptor);
 
         pthread_t sendingThread ;
-        pthread_t receivingThread;
+       // pthread_t receivingThread;
 
    // pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
         //cout << "q"<<endl;
