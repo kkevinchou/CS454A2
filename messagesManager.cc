@@ -36,10 +36,11 @@ static void * sendMessages(void * p)
 		       // if(buffer == NULL) break;
 
 		        n = send(instance->_sfd,s.c_str(),s.size(), 0);
-		      //  cout << "Sent"<<endl;
+		        cout << "Sent"<<endl;
 		        if (n < 0)
 		        {
 		            cerr << "ERROR writing to socket for message: "<<s << endl;
+		            exit(-1);
 				}
 
 

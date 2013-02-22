@@ -116,8 +116,10 @@ void *receiveFromSocketAndSendToOutput(void *fdp)
 
     while(true)
     {
+        cout << "getting ready to receive"<<endl;
         memset(buffer,0,256);
         n = recv(socketFileDescriptor,buffer,255, 0);
+        cout << "got something"<<endl;
         if (n < 0)
              error("ERROR reading from socket");
         cout << buffer << endl;
@@ -172,7 +174,7 @@ int main(int argc, char *argv[])
         pthread_t sendingThread ;
         pthread_t receivingThread;
 
-   // pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
+    pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
         //cout << "q"<<endl;
    // pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
 
