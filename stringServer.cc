@@ -80,6 +80,33 @@ void listenOnSocket(int localSocketFd) {
     listen(localSocketFd, 5);
 }
 
+void toTitleCase(string &inStr) {
+    bool capNext = true;
+
+    for (unsigned int i = 0; i < inStr.length(); i++) {
+        if (capNext && inStr[i] >= 97 && inStr[i] <= 122) {
+            inStr[i] -= 32;
+        }
+
+        if (inStr[i] == 32) {
+            capNext = true;
+        } else {
+            capNext = false;
+        }
+    }
+}
+
+string getStringFromBuffer(char buffer[], int n) {
+    char charStr[n];
+    for (int i = 0; i < n - 1; i++) {
+        charStr[i] = buffer[i];
+    }
+    charStr[n - 1] = '\0';
+
+    string result = charStr;
+    return result;
+}
+
 int main(int argc, char *argv[])
 {
     int localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -128,14 +155,11 @@ int main(int argc, char *argv[])
                         error("ERROR: Failed to read from socket");
                     }
 
-                    std::ostringstream ss;
-                    char recvString[ioStatus];
-                    for (int j = 0; j < ioStatus - 1; j++) {
-                        recvString[j] = buffer[j];
-                    }
-                    recvString[ioStatus - 1] = '\0';
+                    string recvStr = getStringFromBuffer(buffer, ioStatus);
+                    toTitleCase(recvStr);
 
-                    ss << "I GOT: " << recvString << " " << ioStatus;
+                    std::ostringstream ss;
+                    ss << "I GOT: " << recvStr << " " << ioStatus;
 
                     ioStatus = write(clientSocketFd, ss.str().c_str(), 18);
 
@@ -143,7 +167,7 @@ int main(int argc, char *argv[])
                         error("ERROR: Failed to write to socket");
                     }
 
-                    cout << "MESSAGE: " << recvString << endl;
+                    cout << "MESSAGE: " << recvStr << endl;
                 } else {
                     int newSocketFd = acceptConnection(localSocketFd);
                     max_fd = newSocketFd;
