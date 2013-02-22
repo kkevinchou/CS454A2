@@ -20,6 +20,8 @@
 
 #include <cstring>
 
+#include <pthread.h>
+
 using namespace std;
 void error(string msg)
 {
@@ -66,6 +68,55 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
 
     return socketFileDescriptor;
 }
+
+
+void *sendInputToSocket(void *fdp)
+{
+    int socketFileDescriptor = *(int *)(fdp);
+    char buffer[256];
+    int n;
+
+    //list<Message* > msges;
+
+    while(true)
+    {
+        //Message * m = new Message(msg);
+        //msges.push_front(m);
+
+       // cout << "Please enter the message: ";
+        memset(buffer,0,256);
+        fgets(buffer,255,stdin);
+
+        if(buffer == NULL) break;
+
+        n = send(socketFileDescriptor,buffer,strlen(buffer), 0);
+      //  cout << "Sent"<<endl;
+        if (n < 0)
+             error("ERROR writing to socket");
+
+    }
+
+    return NULL;
+}
+
+void *receiveFromSocketAndSendToOutput(void *fdp)
+{
+    int socketFileDescriptor = *(int *)(fdp);
+    char buffer[256];
+    int n;
+
+    while(true)
+    {
+        memset(buffer,0,256);
+        n = recv(socketFileDescriptor,buffer,255, 0);
+        if (n < 0)
+             error("ERROR reading from socket");
+        cout << buffer << endl;
+    }
+    return NULL;
+
+}
+
 int main(int argc, char *argv[])
 {
     char * serverAddressString = getenv ("SERVER_ADDRESS");
@@ -76,7 +127,7 @@ int main(int argc, char *argv[])
 
     int socketFileDescriptor = setupSocketAndReturnDescriptor(serverAddressString, serverPortString);
 
-    char buffer[256];
+   /* char buffer[256];
     int n;
 
 	//list<Message* > msges;
@@ -101,9 +152,14 @@ int main(int argc, char *argv[])
         if (n < 0)
              error("ERROR reading from socket");
         cout << buffer << endl;
-	}
+	}*/
 
 	// eof, but wait for server to respond
 
-    close(socketFileDescriptor);
+    //close(socketFileDescriptor);
+
+        pthread_t sendingThread, receivingThread;
+
+    pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
+    pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
 }

@@ -1,11 +1,11 @@
 CXX = g++					# compiler
-CXXFLAGS = -g -Wall -Wno-unused-label -MMD -DTYPE="${TYPE}" # compiler flags
+CXXFLAGS = -g -Wall -Wno-unused-label -MMD -DTYPE="${TYPE}"  # compiler flags
 MAKEFILE_NAME = ${firstword ${MAKEFILE_LIST}}	# makefile name
 
 OBJECTS1 = stringServer.o
 EXEC1 = stringServer				# 1st executable name
 
-OBJECTS2 = stringClient.o message.o
+OBJECTS2 = stringClient.o message.o messagesManager.o
 EXEC2 = stringClient				# 2st executable name
 
 
@@ -20,10 +20,10 @@ EXECS = ${EXEC1} ${EXEC2} 				# all executables
 all : ${EXECS}					# build all executables
 
 ${EXEC1} : ${OBJECTS1}				# link step 1st executable
-	${CXX} $^ -o $@
+	${CXX} $^ -o $@ -lpthread
 
 ${EXEC2} : ${OBJECTS2}				# link step 1st executable
-	${CXX} $^ -o $@
+	${CXX} $^ -o $@ -lpthread
 
 #############################################################
 

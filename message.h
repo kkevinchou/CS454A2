@@ -6,6 +6,8 @@
 using namespace std;
 class Message
 {
+	private:
+		string _msg;
 	public:
 		Message(string message);
 };

@@ -2,5 +2,5 @@
 
 Message::Message(string message)
 {
-	
+	_msg = message;
 }
