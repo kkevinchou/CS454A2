@@ -16,7 +16,7 @@ void error(string message)
 
 int listenForConnection(int localSocketFd) {
     struct sockaddr_in serverAddress;
-    memset(&serverAddress, 0, sizeof(serverAddress));
+    memset((struct sockaddr_in *)&serverAddress, 0, sizeof(serverAddress));
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
@@ -34,7 +34,7 @@ int listenForConnection(int localSocketFd) {
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
     getsockname(localSocketFd, (struct sockaddr *)&sin, &len);
-    cout << "SERVER_PORT " << sin.sin_port << endl;
+    cout << "SERVER_PORT " << ntohs(sin.sin_port) << endl;
 
     struct sockaddr_in clientAddress;
     socklen_t clientAddressSize = sizeof(clientAddress);
