@@ -107,6 +107,38 @@ string getStringFromBuffer(char buffer[], int n) {
     return result;
 }
 
+void handleRequest(int clientSocketFd, fd_set *master_set) {
+    char buffer[256];
+    memset(buffer, 0, 256);
+    int ioStatus = recv(clientSocketFd, buffer, 255, 0);
+
+    if (ioStatus == 0) {
+        FD_CLR(clientSocketFd, master_set);
+        close(clientSocketFd);
+        return;
+    }
+
+    if (ioStatus < 0) {
+        error("ERROR: Failed to read from socket");
+    }
+
+    string recvStr = getStringFromBuffer(buffer, ioStatus);
+    string processedStr = recvStr;
+
+    cout << recvStr << endl;
+
+    toTitleCase(processedStr);
+
+    std::ostringstream ss;
+    ss << processedStr;
+
+    ioStatus = send(clientSocketFd, ss.str().c_str(), processedStr.length() + 1, 0);
+
+    if (ioStatus < 0) {
+        error("ERROR: Failed to write to socket");
+    }
+}
+
 int main(int argc, char *argv[])
 {
     int localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -123,10 +155,6 @@ int main(int argc, char *argv[])
     FD_ZERO(&master_set);
     FD_SET(localSocketFd, &master_set);
 
-    timeval timeout;
-    timeout.tv_sec = 3 * 60;
-    timeout.tv_usec = 0;
-
     while (true) {
         memcpy(&working_set, &master_set, sizeof(master_set));
         int selectResult = select(max_fd + 1, &working_set, NULL, NULL, NULL);
@@ -141,33 +169,7 @@ int main(int argc, char *argv[])
             if (FD_ISSET(i, &working_set)) {
                 if (i != localSocketFd) {
                     int clientSocketFd = i;
-                    char buffer[256];
-                    memset(buffer, 0, 256);
-                    int ioStatus = recv(clientSocketFd, buffer, 255, 0);
-
-                    if (ioStatus == 0) {
-                        FD_CLR(clientSocketFd, &master_set);
-                        close(clientSocketFd);
-                        continue;
-                    }
-
-                    if (ioStatus < 0) {
-                        error("ERROR: Failed to read from socket");
-                    }
-
-                    string recvStr = getStringFromBuffer(buffer, ioStatus);
-                    toTitleCase(recvStr);
-
-                    std::ostringstream ss;
-                    ss << recvStr;
-
-                    ioStatus = send(clientSocketFd, ss.str().c_str(), recvStr.length() + 1, 0);
-
-                    if (ioStatus < 0) {
-                        error("ERROR: Failed to write to socket");
-                    }
-
-                    cout << "MESSAGE: " << recvStr << endl;
+                    handleRequest(clientSocketFd, &master_set);
                 } else {
                     int newSocketFd = acceptConnection(localSocketFd);
                     max_fd = newSocketFd;
