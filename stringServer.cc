@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <strings.h>
+#include <cstring>
 
 using namespace std;
 
@@ -13,51 +14,59 @@ void error(string message)
     exit(-1);
 }
 
+int listenForConnection(int localSocketFd, int port) {
+    struct sockaddr_in serverAddress;
+    memset(&serverAddress, 0, sizeof(serverAddress));
+
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    serverAddress.sin_port = htons(port);
+
+    if (bind(localSocketFd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0)
+          error("ERROR on binding");
+
+    listen(localSocketFd, 5);
+
+    struct sockaddr_in clientAddress;
+    socklen_t clientAddressSize = sizeof(clientAddress);
+    int newSocketFd = accept(localSocketFd, (struct sockaddr *) &clientAddress, &clientAddressSize);
+
+    if (newSocketFd < 0)
+        error("ERROR on accept");
+
+    return newSocketFd;
+}
+
 int main(int argc, char *argv[])
 {
-    int sockfd, newsockfd, portno;
-    socklen_t clilen;
-    char buffer[256];
-    struct sockaddr_in serv_addr, cli_addr;
-    int n;
-
     if (argc < 2) {
         error("PORT NUMBER MISSING");
     }
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
+    int localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (localSocketFd < 0) {
         error("ERROR opening socket");
+    }
 
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    portno = atoi(argv[1]);
+    int port = atoi(argv[1]);
+    int newSocketFd = listenForConnection(localSocketFd, port);
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(portno);
-    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-          error("ERROR on binding");
+    char buffer[256];
+    memset(buffer, 0, 256);
+    int ioStatus = read(newSocketFd, buffer, 255);
 
-    listen(sockfd, 5);
-    clilen = sizeof(cli_addr);
-    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-
-    if (newsockfd < 0)
-        error("ERROR on accept");
-
-    bzero(buffer, 256);
-    n = read(newsockfd, buffer, 255);
-
-    if (n < 0) error("ERROR reading from socket");
+    if (ioStatus < 0) error("ERROR reading from socket");
 
     cout << "MESSAGE: " << buffer << endl;
 
-    n = write(newsockfd, "I got your message", 18);
+    ioStatus = write(newSocketFd, "I got your message", 18);
 
-    if (n < 0) error("ERROR writing to socket");
+    if (ioStatus < 0) {
+        error("ERROR writing to socket");
+    }
 
-    close(newsockfd);
-    close(sockfd);
+    close(newSocketFd);
+    close(localSocketFd);
 
     return 0;
 }
