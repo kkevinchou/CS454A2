@@ -10,6 +10,7 @@ class Message
 		string _msg;
 	public:
 		Message(string message);
+		string getString();
 };
 
 #endif
