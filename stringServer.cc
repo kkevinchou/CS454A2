@@ -14,55 +14,61 @@ void error(string message)
     exit(-1);
 }
 
-int listenForConnection(int localSocketFd, int port) {
+int listenForConnection(int localSocketFd) {
     struct sockaddr_in serverAddress;
     memset(&serverAddress, 0, sizeof(serverAddress));
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(port);
+    serverAddress.sin_port = 0;
 
     if (bind(localSocketFd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0)
-          error("ERROR on binding");
+          error("ERROR: Failed to bind local socket");
 
     listen(localSocketFd, 5);
+
+    char localHostName[256];
+    gethostname(localHostName, 256);
+    cout << "SERVER_ADDRESS " << localHostName << endl;
+
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    getsockname(localSocketFd, (struct sockaddr *)&sin, &len);
+    cout << "SERVER_PORT " << sin.sin_port << endl;
 
     struct sockaddr_in clientAddress;
     socklen_t clientAddressSize = sizeof(clientAddress);
     int newSocketFd = accept(localSocketFd, (struct sockaddr *) &clientAddress, &clientAddressSize);
 
     if (newSocketFd < 0)
-        error("ERROR on accept");
+        error("ERROR: Failed to accept client connection");
 
     return newSocketFd;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        error("PORT NUMBER MISSING");
-    }
-
     int localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (localSocketFd < 0) {
-        error("ERROR opening socket");
+        error("ERROR: Failed to open socket");
     }
 
-    int port = atoi(argv[1]);
-    int newSocketFd = listenForConnection(localSocketFd, port);
+    int newSocketFd = listenForConnection(localSocketFd);
 
     char buffer[256];
     memset(buffer, 0, 256);
     int ioStatus = read(newSocketFd, buffer, 255);
 
-    if (ioStatus < 0) error("ERROR reading from socket");
+    if (ioStatus < 0) {
+        error("ERROR: Failed to read from socket");
+    }
 
     cout << "MESSAGE: " << buffer << endl;
 
     ioStatus = write(newSocketFd, "I got your message", 18);
 
     if (ioStatus < 0) {
-        error("ERROR writing to socket");
+        error("ERROR: Failed to write to socket");
     }
 
     close(newSocketFd);
