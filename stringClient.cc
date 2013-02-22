@@ -38,7 +38,7 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
     struct sockaddr_in serverAddressStruct;
     struct hostent *server;
 
- 
+
 
     serverPort = atoi(serverPortString);
     socketFileDescriptor = socket(AF_INET, SOCK_STREAM, 0);
@@ -130,12 +130,12 @@ int main(int argc, char *argv[])
    /* char buffer[256];
     int n;
 
-	//list<Message* > msges;
+    //list<Message* > msges;
 
-	while(true)
-	{
-		//Message * m = new Message(msg);
-		//msges.push_front(m);
+    while(true)
+    {
+        //Message * m = new Message(msg);
+        //msges.push_front(m);
 
         cout << "Please enter the message: ";
         memset(buffer,0,256);
@@ -152,9 +152,9 @@ int main(int argc, char *argv[])
         if (n < 0)
              error("ERROR reading from socket");
         cout << buffer << endl;
-	}*/
+    }*/
 
-	// eof, but wait for server to respond
+    // eof, but wait for server to respond
 
     //close(socketFileDescriptor);
 
