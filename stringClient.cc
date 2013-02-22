@@ -92,11 +92,12 @@ int main(int argc, char *argv[])
 
         if(buffer == NULL) break;
 
-        n = write(socketFileDescriptor,buffer,strlen(buffer));
+        n = send(socketFileDescriptor,buffer,strlen(buffer), 0);
+        cout << "Sent"<<endl;
         if (n < 0)
              error("ERROR writing to socket");
         memset(buffer,0,256);
-        n = read(socketFileDescriptor,buffer,255);
+        n = recv(socketFileDescriptor,buffer,255, 0);
         if (n < 0)
              error("ERROR reading from socket");
         cout << buffer << endl;
