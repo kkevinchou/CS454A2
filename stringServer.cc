@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
                     std::ostringstream ss;
                     ss << "I GOT: " << recvStr << " " << ioStatus;
 
-                    ioStatus = write(clientSocketFd, ss.str().c_str(), 18);
+                    ioStatus = send(clientSocketFd, ss.str().c_str(), recvStr.length() + 1, 0);
 
                     if (ioStatus < 0) {
                         error("ERROR: Failed to write to socket");
