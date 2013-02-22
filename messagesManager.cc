@@ -14,7 +14,7 @@ static void * sendMessages(void * p)
 	while(true)
 	{
 		//cout << "? " <<endl;
-		if(instance == NULL) cout << "INSTANCE IS NULL"<<endl;
+		//if(instance == NULL) cout << "INSTANCE IS NULL"<<endl;
 		if(instance != NULL && instance->_m.size() > 0)
 		{
 			//cout << "has stuff"<<endl;
@@ -36,7 +36,7 @@ static void * sendMessages(void * p)
 		       // if(buffer == NULL) break;
 
 		        n = send(instance->_sfd,s.c_str(),s.size(), 0);
-		        cout << "Sent"<<endl;
+		       // cout << "Sent"<<endl;
 		        if (n < 0)
 		        {
 		            cerr << "ERROR writing to socket for message: "<<s << endl;
