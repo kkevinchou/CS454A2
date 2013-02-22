@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sstream>
 
 using namespace std;
 
@@ -127,13 +128,22 @@ int main(int argc, char *argv[])
                         error("ERROR: Failed to read from socket");
                     }
 
-                    ioStatus = write(clientSocketFd, "I got your message", 18);
+                    std::ostringstream ss;
+                    char recvString[ioStatus];
+                    for (int j = 0; j < ioStatus - 1; j++) {
+                        recvString[j] = buffer[j];
+                    }
+                    recvString[ioStatus - 1] = '\0';
+
+                    ss << "I GOT: " << recvString << " " << ioStatus;
+
+                    ioStatus = write(clientSocketFd, ss.str().c_str(), 18);
 
                     if (ioStatus < 0) {
                         error("ERROR: Failed to write to socket");
                     }
 
-                    cout << "MESSAGE: " << buffer << endl;
+                    cout << "MESSAGE: " << recvString << endl;
                 } else {
                     int newSocketFd = acceptConnection(localSocketFd);
                     max_fd = newSocketFd;
