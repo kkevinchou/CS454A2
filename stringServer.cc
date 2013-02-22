@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
     while (true) {
         memcpy(&working_set, &master_set, sizeof(master_set));
-        int selectResult = select(max_fd + 1, &working_set, NULL, NULL, &timeout);
+        int selectResult = select(max_fd + 1, &working_set, NULL, NULL, NULL);
 
         if (selectResult < 0) {
             error("ERROR: Select failed");
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
                     toTitleCase(recvStr);
 
                     std::ostringstream ss;
-                    ss << "I GOT: " << recvStr << " " << ioStatus;
+                    ss << recvStr;
 
                     ioStatus = send(clientSocketFd, ss.str().c_str(), recvStr.length() + 1, 0);
 
@@ -172,7 +172,6 @@ int main(int argc, char *argv[])
                     int newSocketFd = acceptConnection(localSocketFd);
                     max_fd = newSocketFd;
                     FD_SET(newSocketFd, &master_set);
-                    cerr << "CONNECTION RECEIVED " << newSocketFd << endl;
                 }
             }
         }
