@@ -123,12 +123,13 @@ void *receiveFromSocketAndSendToOutput(void *fdp)
         if(n == 0)
         {
             //connection closed!
-            exit(0);
+            break;
         }
         else if (n < 0)
              error("ERROR reading from socket");
         cout << "Server: "<<buffer << endl;
     }
+
     return NULL;
 
 }
@@ -179,10 +180,11 @@ int main(int argc, char *argv[])
         pthread_t sendingThread ;
         pthread_t receivingThread;
 
-    pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
+   // pthread_create(&receivingThread, NULL, &receiveFromSocketAndSendToOutput, &socketFileDescriptor);
         //cout << "q"<<endl;
-   // pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
+    pthread_create(&sendingThread, NULL, &sendInputToSocket, &socketFileDescriptor);
 
      //pthread_join(sendingThread, NULL); //
-        sendInputToSocket(&socketFileDescriptor);
+       // sendInputToSocket(&socketFileDescriptor);
+        receiveFromSocketAndSendToOutput(&socketFileDescriptor);
 }

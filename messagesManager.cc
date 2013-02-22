@@ -81,4 +81,5 @@ void MessagesManager::addMessage(string m)
 MessagesManager::~MessagesManager()
 {
 	pthread_mutex_destroy(_listLock);
+	free(_listLock);
 }
