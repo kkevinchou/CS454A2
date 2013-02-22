@@ -64,7 +64,7 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
          server->h_length);
     serverAddressStruct.sin_port = htons(serverPort);
 
-    cout << "HOST: "<<serverAddressString << " PORT: " << serverPort<<endl;
+   // cout << "HOST: "<<serverAddressString << " PORT: " << serverPort<<endl;
 
     if (connect(socketFileDescriptor,(struct sockaddr *) &serverAddressStruct,sizeof(serverAddressStruct)) < 0)
         error("ERROR while connecting");
@@ -116,13 +116,18 @@ void *receiveFromSocketAndSendToOutput(void *fdp)
 
     while(true)
     {
-        cout << "getting ready to receive"<<endl;
+      //  cout << "getting ready to receive"<<endl;
         memset(buffer,0,256);
         n = recv(socketFileDescriptor,buffer,255, 0);
-        cout << "got something"<<endl;
-        if (n < 0)
+       // cout << "got something"<<endl;
+        if(n == 0)
+        {
+            //connection closed!
+            exit(0);
+        }
+        else if (n < 0)
              error("ERROR reading from socket");
-        cout << buffer << endl;
+        cout << "Server: "<<buffer << endl;
     }
     return NULL;
 
