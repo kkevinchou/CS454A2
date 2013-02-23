@@ -8,16 +8,13 @@ class Message
 {
 	private:
 		string _msg;
-		bool _validString;
-		unsigned int _sizeLeft;
 
 	public:
 		Message(string message);
-		Message(int size);
+		Message();
 		string getString();
-		bool addToString(string partialString);
+		void addToString(string partialString);
 
-		bool isComplete;
 };
 
 #endif

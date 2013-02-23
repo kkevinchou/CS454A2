@@ -44,8 +44,6 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
     struct sockaddr_in serverAddressStruct;
     struct hostent *server;
 
-
-
     serverPort = atoi(serverPortString);
     socketFileDescriptor = socket(AF_INET, SOCK_STREAM, 0);
     if (socketFileDescriptor < 0)
@@ -57,7 +55,6 @@ int setupSocketAndReturnDescriptor(char * serverAddressString, char * serverPort
         error("ERROR: No such host");
 
     }
-
 
     memset((char *) &serverAddressStruct, 0,sizeof(serverAddressStruct));
 
@@ -83,13 +80,14 @@ void *sendInputToSocket(void *fdp)
 
     while(true)
     {
-        cin >> line;
+        getline(cin, line);
         if(cin.fail()) break;
         instance->addMessage(line);
         messageCounter++;
     }
 
     inputDone = true;
+    if(messageCounter == 0) exit(0); //no waiting for response, so terminate
     return NULL;
 }
 
@@ -123,7 +121,7 @@ void *receiveFromSocketAndSendToOutput(void *fdp)
         }
 
         unsigned int messageSize = (sizeBuffer[0] << 24) + (sizeBuffer[1] << 16) + (sizeBuffer[2] << 8) + sizeBuffer[3];
-        Message * m = new Message(messageSize-1); // size ignores null char
+        Message * m = new Message(); // size ignores null char
         char buffer[messageSize];
         while(true)
         {
@@ -151,8 +149,6 @@ void *receiveFromSocketAndSendToOutput(void *fdp)
 
         messageCounter --;
         if(inputDone && messageCounter == 0) break;
-
-
     }
 
     return NULL;
