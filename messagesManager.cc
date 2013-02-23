@@ -81,6 +81,8 @@ static void * sendMessages(void * p)
 					size -= n;
 					cstr += n;
 
+					if(size == 0) break;
+
 					sleep(2);
 				}
 		        
