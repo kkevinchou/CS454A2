@@ -81,8 +81,10 @@ void *sendInputToSocket(void *fdp)
 
     string line;
 
-    while(cin >> line)
+    while(true)
     {
+        cin >> line;
+        if(cin.fail()) break;
         instance->addMessage(line);
         messageCounter++;
     }
