@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <sstream>
+#include <map>
 
 using namespace std;
 
@@ -31,7 +32,7 @@ void printServerSettings(int localSocketFd) {
     cout << "SERVER_PORT " << ntohs(sin.sin_port) << endl;
 }
 
-int waitForConnection(int localSocketFd) {
+int waitForConnection(int localSocketFd, map<int, unsigned int> &chunkInfo) {
     struct sockaddr_in serverAddress;
     memset((struct sockaddr_in *)&serverAddress, 0, sizeof(serverAddress));
 
@@ -48,6 +49,8 @@ int waitForConnection(int localSocketFd) {
     struct sockaddr_in clientAddress;
     socklen_t clientAddressSize = sizeof(clientAddress);
     int newSocketFd = accept(localSocketFd, (struct sockaddr *) &clientAddress, &clientAddressSize);
+
+    chunkInfo[newSocketFd] = 0;
 
     if (newSocketFd < 0)
         error("ERROR: Failed to accept client connection");
@@ -97,52 +100,105 @@ void toTitleCase(string &inStr) {
 }
 
 string getStringFromBuffer(char buffer[], int n) {
-    char charStr[n];
-    for (int i = 0; i < n - 1; i++) {
+    char charStr[n + 1];
+    for (int i = 0; i < n; i++) {
         charStr[i] = buffer[i];
     }
-    charStr[n - 1] = '\0';
+    charStr[n] = '\0';
 
     string result = charStr;
     return result;
 }
 
-void handleRequest(int clientSocketFd, fd_set *master_set) {
-    char buffer[256];
-    memset(buffer, 0, 256);
-    int ioStatus = recv(clientSocketFd, buffer, 255, 0);
+void handleRequest(int clientSocketFd, fd_set *master_set, map<int, unsigned int> &chunkInfo) {
+    int bytesReceived;
 
-    if (ioStatus == 0) {
-        FD_CLR(clientSocketFd, master_set);
-        close(clientSocketFd);
-        return;
-    }
+    if (chunkInfo[clientSocketFd] == 0) {
+        unsigned char *buffer = new unsigned char[4];
+        memset(buffer, 0, 4);
+        bytesReceived = recv(clientSocketFd, buffer, 4, 0);
 
-    if (ioStatus < 0) {
-        error("ERROR: Failed to read from socket");
-    }
+        unsigned int numBytes = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
+        chunkInfo[clientSocketFd] = numBytes;
 
-    string recvStr = getStringFromBuffer(buffer, ioStatus);
-    string processedStr = recvStr;
+        if (bytesReceived < 0) {
+            error("ERROR: Failed to read from socket");
+        }
 
-    cout << recvStr << endl;
+        if (bytesReceived == 0) {
+            FD_CLR(clientSocketFd, master_set);
+            close(clientSocketFd);
+            delete buffer;
+            return;
+        }
 
-    toTitleCase(processedStr);
+        delete buffer;
+    } else {
+        int bufferSize = 256;
+        char *buffer = new char[bufferSize];
+        string recvStr;
 
-    std::ostringstream ss;
-    ss << processedStr;
+        while (chunkInfo[clientSocketFd] > 0) {
+            bytesReceived = recv(clientSocketFd, buffer, bufferSize, 0);
+            chunkInfo[clientSocketFd] -= bytesReceived;
 
-    ioStatus = send(clientSocketFd, ss.str().c_str(), processedStr.length() + 1, 0);
+            if (bytesReceived < 0) {
+                error("ERROR: Failed to read from socket");
+            }
 
-    if (ioStatus < 0) {
-        error("ERROR: Failed to write to socket");
+            if (bytesReceived == 0) {
+                FD_CLR(clientSocketFd, master_set);
+                close(clientSocketFd);
+                return;
+            }
+
+            string stringChunk = getStringFromBuffer(buffer, bytesReceived);
+            recvStr += stringChunk;
+        }
+
+        string processedStr = recvStr;
+
+        cout << recvStr << endl;
+        toTitleCase(processedStr);
+
+        unsigned int size = processedStr.length() + 1;
+
+        unsigned char sizeBytes[4];
+        unsigned char *sizeBytesP = sizeBytes;
+        const char *cstr = processedStr.c_str();
+
+        sizeBytes[0] = (size >> 24) & 0xFF;
+        sizeBytes[1] = (size >> 16) & 0xFF;
+        sizeBytes[2] = (size >> 8) & 0xFF;
+        sizeBytes[3] = size & 0xFF;
+
+        if (send(clientSocketFd, sizeBytesP, 4, 0) < 0) {
+            error("ERROR: Failed sending to socket1");
+        }
+
+        unsigned int bytesLeftToSend = size;
+
+        while(true) {
+            int bytesSent = send(clientSocketFd, cstr, bytesLeftToSend, 0);
+
+            if(bytesSent == 0) {
+                break;
+            }
+            else if (bytesSent < 0) {
+                error("ERROR: Failed sending to socket2");
+            }
+
+            bytesLeftToSend -= bytesSent;
+            cstr += bytesSent;
+        }
+
+        delete buffer;
     }
 }
 
 int main(int argc, char *argv[])
 {
     int localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-    cerr << "LOCAL SOCKET: " << localSocketFd << endl;
     if (localSocketFd < 0) {
         error("ERROR: Failed to open socket");
     }
@@ -154,6 +210,8 @@ int main(int argc, char *argv[])
     fd_set master_set, working_set;
     FD_ZERO(&master_set);
     FD_SET(localSocketFd, &master_set);
+
+    map<int, unsigned int> chunkInfo;
 
     while (true) {
         memcpy(&working_set, &master_set, sizeof(master_set));
@@ -169,7 +227,7 @@ int main(int argc, char *argv[])
             if (FD_ISSET(i, &working_set)) {
                 if (i != localSocketFd) {
                     int clientSocketFd = i;
-                    handleRequest(clientSocketFd, &master_set);
+                    handleRequest(clientSocketFd, &master_set, chunkInfo);
                 } else {
                     int newSocketFd = acceptConnection(localSocketFd);
                     max_fd = newSocketFd;
